@@ -90,18 +90,20 @@ QString LZSS::decompress()
         QString currentDictionary = result;
         QString currentBuffer;
 
-        if (isLiteral)
+        if (!isLiteral)
         {
             result.append(nextChar);
             currentBuffer = QString(nextChar);
         }
         else
         {
-            int startPos = result.size() - distance;
-            for (int i = 0; i < length; ++i) {
+            int startPos = result.size() - distance - 1;
+            for (int i = 0; i < length; ++i)
+            {
                 result.append(result[startPos + i]);
             }
-            if (!nextChar.isNull()) {
+            if (!nextChar.isNull())
+            {
                 result.append(nextChar);
             }
             currentBuffer = result.mid(startPos, length) + nextChar;
@@ -118,9 +120,9 @@ QString LZSS::decompress()
 void LZSS::parseEncoded(const QString& encodedString)
 {
     compressedData.clear();
-    //qDebug() << encodedString;
+    qDebug() << encodedString;
 
-    QRegularExpression re(R"((0, '(.{1})')|(1 <(\d+),(\d+)>)$)");
+    QRegularExpression re(R"((0 '(.{1})')|(1 <(\d+), (\d+)>))");
     QRegularExpressionMatchIterator i = re.globalMatch(encodedString);
 
 
@@ -128,20 +130,15 @@ void LZSS::parseEncoded(const QString& encodedString)
     {
         QRegularExpressionMatch match = i.next();
 
-        auto flag = match.captured(1).toInt();
-        if(flag == 0)
+        if (!match.captured(1).isEmpty())
         {
-            auto character = match.captured(2).at(0);
-            compressedData.push_back(std::make_tuple(flag, 0, 0, character));
+            compressedData.push_back(std::make_tuple(0, 0, 0, match.captured(2).at(0)));
         }
         else
         {
-            auto distance = match.captured(2).toInt();
-            auto length = match.captured(3).toInt();
-            auto character = match.captured(4).at(0);
-            compressedData.push_back(std::make_tuple(flag, distance, length, character));
-
+            compressedData.push_back(std::make_tuple(1, match.captured(4).toInt(), match.captured(5).toInt(), QChar()));
         }
+
     }
 }
 
